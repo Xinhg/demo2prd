@@ -23,6 +23,24 @@ def test_prd_writing_prompt_has_engineering_prd_contract():
         assert section in content
 
 
+def test_prd_writing_prompt_has_incremental_interviewer_contract():
+    content = PROMPT_PATH.read_text(encoding="utf-8")
+
+    required_interviewer_rules = [
+        "需求访谈模式",
+        "访谈记录",
+        "问题清单",
+        "每轮只问一个问题",
+        "不得一次性抛出全部问题",
+        "回答后更新访谈记录",
+        "所有 P0 级别问题确认完毕",
+        "达到进入下一步的阈值",
+        "允许用户继续访谈",
+    ]
+    for rule in required_interviewer_rules:
+        assert rule in content
+
+
 def test_prd_writing_prompt_is_generic_not_business_specific():
     content = PROMPT_PATH.read_text(encoding="utf-8")
 

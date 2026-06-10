@@ -71,6 +71,20 @@ Mockitt signatures (`mb-proto2/` + `extra/data.*.js`).
 
 ### 2. Run the Extraction
 
+The skill directory itself contains instructions and references. The
+parser Python package may not be inside the skill directory after
+installation. Before running the CLI, locate the runtime project directory:
+
+- If the current workspace contains `pyproject.toml` and
+  `proto_to_requirement/`, run the command from that workspace.
+- If installed from this package on Codex, use
+  `~/.codex/skill-runtimes/proto-to-requirement-skill-suite` as the
+  runtime directory.
+- If neither location exists, ask the user to provide or install the
+  parser runtime package before attempting extraction.
+
+From the runtime directory, run:
+
 ```bash
 uv run python3 -m proto_to_requirement.cli <prototype_dir> --output <output_dir>
 ```

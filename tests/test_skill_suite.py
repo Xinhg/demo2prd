@@ -108,6 +108,14 @@ def test_parser_skill_preserves_cli_command():
     assert "uv run python3 -m proto_to_requirement.cli" in content
 
 
+def test_parser_skill_explains_runtime_location_when_installed():
+    content = _read_skill(PARSER_SKILL)
+    assert "runtime" in content.lower()
+    assert "skill directory" in content.lower()
+    assert "~/.codex/skill-runtimes/proto-to-requirement-skill-suite" in content
+    assert "parser runtime package" in content.lower()
+
+
 # ---------------------------------------------------------------------------
 # PM interviewer skill — contract-term tests
 # ---------------------------------------------------------------------------
@@ -166,6 +174,26 @@ def test_interviewer_skill_defines_outputs():
     content = _read_skill(INTERVIEWER_SKILL)
     assert "question" in content.lower()
     assert "interview report" in content.lower()
+
+
+def test_interviewer_skill_asks_one_question_per_turn_until_p0_threshold():
+    content = _read_skill(INTERVIEWER_SKILL)
+    normalized_content = " ".join(content.lower().split())
+    required_terms = [
+        "interview record",
+        "question backlog",
+        "one question per turn",
+        "do not present the full backlog as questions",
+        "update the interview record",
+        "all P0 questions",
+        "threshold for the next stage",
+        "continue the interview",
+    ]
+    for term in required_terms:
+        normalized_term = " ".join(term.lower().split())
+        assert normalized_term in normalized_content, (
+            f"Interviewer skill missing incremental interview rule: {term}"
+        )
 
 
 def test_interviewer_skill_defines_required_inputs():

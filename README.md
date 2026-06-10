@@ -33,6 +33,19 @@
 uv run python3 -m proto_to_requirement.cli <prototype_dir> --output <output_dir>
 ```
 
+如果 skill 已安装到 Codex，注意 skill 目录本身通常只包含 `SKILL.md` 和参考材料；解析器 Python 包不一定在 skill 目录内。当前推荐的 runtime 位置是：
+
+```text
+~/.codex/skill-runtimes/proto-to-requirement-skill-suite
+```
+
+因此在 Codex 上运行 Stage 1 时，先进入 runtime 目录：
+
+```bash
+cd ~/.codex/skill-runtimes/proto-to-requirement-skill-suite
+uv run python3 -m proto_to_requirement.cli <prototype_dir> --output <output_dir>
+```
+
 示例：
 
 ```bash

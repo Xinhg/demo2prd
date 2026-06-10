@@ -64,6 +64,10 @@ Two artifacts are produced:
 | Interview Question List | Prioritized P0/P1/P2 questions organized by category, ready for a PM interview session |
 | PM Interview Report | Structured report recording PM answers with source labels, unresolved items, and follow-up owners |
 
+The question list is an internal backlog for the interview, not a prompt to
+dump every question to the PM at once. During a live interview, maintain an
+interview record and ask one question per turn.
+
 ## Question Categories
 
 Questions are organized into these categories. Every category must be
@@ -153,15 +157,60 @@ materials. Generate questions where:
 
 Prioritize questions with P0/P1/P2 based on the definitions above.
 
+Create an interview record before asking the first question. The record must
+include the question backlog and enough state for a new agent to continue the
+interview without memory of prior turns:
+
+| ID | Priority | Category | Evidence | Question | Decision Needed | Impact | Status | PM Answer | Result |
+|----|----------|----------|----------|----------|-----------------|--------|--------|-----------|--------|
+
+Allowed statuses:
+
+- Not asked
+- Confirmed
+- Partially confirmed
+- Still open
+- Needs repository check
+- Needs external material
+- Not applicable
+
 ### 3. Conduct the Interview
 
-Present questions to the PM by category and priority. For each question:
+Conduct the interview incrementally. Do not present the full backlog as
+questions. For each turn:
 
-- State what the prototype evidence shows (so the PM has context).
-- Ask the specific gap that needs a decision.
+- Pick the next question from the backlog by priority: P0 first, then P1,
+  then P2. Within the same priority, ask questions that affect data models,
+  API contracts, main flows, templates, external dependencies, and
+  permissions before lower-impact UX details.
+- Ask one question per turn. The question must be short, specific, and able
+  to close one decision point.
+- State only the minimum prototype evidence needed for context.
 - Record the answer verbatim with the appropriate source label.
+- After each PM answer, update the interview record before asking anything
+  else.
+- Mark the current item as confirmed, partially confirmed, still open,
+  needs repository check, needs external material, rejected, or not
+  applicable.
+- If the answer creates a new blocker, add a new backlog item and reprioritize
+  the backlog.
 - If the PM defers or doesn't know, label as `Unanswered` and assign a
   follow-up owner.
+- Continue until all P0 questions are confirmed, rejected as not applicable,
+  or converted into explicit follow-up blockers with owners.
+
+Once all P0 questions are no longer open, the interview has reached the
+threshold for the next stage. Recommend handing the parser artifacts and
+interview report to `bdd-engineering-prd-writer`, but allow the PM to
+continue the interview to complete P1/P2 items and enrich the record.
+
+Each live-interview response must use this structure:
+
+1. **Interview record update**: summarize what changed in the record.
+2. **Threshold status**: state how many P0 items remain open and whether the
+   threshold for the next stage has been reached.
+3. **Next question**: ask one question only, or ask whether to continue the
+   interview after the P0 threshold is reached.
 
 ### 4. Produce the Interview Report
 
