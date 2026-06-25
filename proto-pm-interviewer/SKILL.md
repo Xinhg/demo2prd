@@ -1,55 +1,67 @@
 ---
 name: proto-pm-interviewer
 description: >
-  Stage 2 of 3: Conduct a structured product-manager interview using
-  prototype parser evidence and auxiliary materials. Produces a prioritized
-  question list and a PM interview report with confirmed decisions, source
-  labels, and open items — without inventing answers on behalf of the PM.
+  Stage 2 of 4: Generate a printable / screen-shareable PM question
+  checklist from prototype parser evidence, field analysis, and auxiliary
+  materials. Questions are designed as multiple-choice where possible for
+  high readability in meetings. Also produces a standard answer template
+  that AI can auto-fill from raw meeting notes after the meeting.
 triggers:
-  - "interview the PM"
+  - "PM question checklist"
   - "prepare PM questions"
   - "proto PM interview"
-  - "requirements interview"
-  - "product manager interview"
+  - "requirements checklist"
+  - "product manager questions"
+  - "PM提问清单"
+  - "生成提问清单"
 ---
 
-# proto-pm-interviewer (Stage 2 — PM Interview)
+# proto-pm-interviewer (Stage 2 — PM Question Checklist Generator)
 
-Convert prototype parser evidence and auxiliary materials into a structured
-product-manager interview. This skill asks and records — it must **not**
-invent PM answers, fill gaps as confirmed requirements, or make product
-decisions.
+Generate a high-readability PM question checklist for use in product
+manager meetings. This skill produces a **printable / screen-shareable
+document** — it does **not** conduct a live interview. The user takes this
+document into a meeting, asks the PM, and then provides meeting notes or
+an answer document for the next stage.
 
-This is stage 2 of the three-stage workflow:
+This is stage 2 of the four-stage workflow:
 
-1. **Parser** (`proto-to-requirement`) — produces prototype evidence.
-2. **PM Interviewer** (this skill) — asks targeted questions and records
-   confirmed answers.
-3. **BDD Writer** (`bdd-engineering-prd-writer`) — uses parser evidence and
-   the PM interview report to write the final BDD engineering PRD.
+1. **Parser + Field Analysis** (`proto-to-requirement`) — produces
+   prototype evidence and field analysis.
+2. **PM Question Checklist** (this skill) — generates a meeting-ready
+   question document.
+3. **PM Answer Collection** (user manual step) — user collects PM answers
+   during the meeting and provides notes or filled answer template.
+4. **BDD Writer** (`bdd-engineering-prd-writer`) — uses all evidence and
+   PM answers to write the final BDD engineering PRD.
 
 ## When to Use
 
 - After the parser has produced `prototype-analysis.md`,
-  `structured-data.json`, and `completeness-report.json`.
-- Before writing the BDD engineering PRD — unresolved parser findings must
-  be confirmed or rejected by a human product manager.
-- When the parser evidence shows gaps in permissions, edit boundaries,
-  business logic, state transitions, exceptions, or data ownership.
+  `structured-data.json`, `completeness-report.json`, and
+  `field-analysis.md`.
+- Before a PM meeting where you need to confirm requirements, resolve
+  ambiguities, and close open items from the field analysis.
+- When you need a structured, readable document to guide a requirements
+  discussion.
 
 ## When Not to Use
 
-- Before prototype parsing is complete: run `proto-to-requirement` first.
-- For writing the final PRD: use `bdd-engineering-prd-writer` after the
-  interview report is done.
-- When there is no access to a human PM: this skill requires a human
-  product manager to answer questions.
+- Before prototype parsing and field analysis are complete: run
+  `proto-to-requirement` first.
+- For writing the final PRD: use `bdd-engineering-prd-writer` after PM
+  answers are collected.
+- When all field analysis items have high confidence and no open items
+  exist.
 
 ## Required Input
 
 1. **Parser evidence**: `prototype-analysis.md`, `structured-data.json`,
    `completeness-report.json` from the parser stage.
-2. **Auxiliary materials** (optional but recommended):
+2. **Field analysis**: `field-analysis.md` from the parser stage,
+   especially the "Questions for PM Confirmation" section and low-
+   confidence field entries.
+3. **Auxiliary materials** (optional but recommended):
    - Manual PRDs or requirement documents
    - Screenshots, flowcharts, meeting notes
    - Existing system documentation
@@ -59,189 +71,286 @@ This is stage 2 of the three-stage workflow:
 
 Two artifacts are produced:
 
-| Output | Description |
-|--------|-------------|
-| Interview Question List | Prioritized P0/P1/P2 questions organized by category, ready for a PM interview session |
-| PM Interview Report | Structured report recording PM answers with source labels, unresolved items, and follow-up owners |
+| Output | File | Description |
+|--------|------|-------------|
+| PM Question Checklist | `pm-question-checklist.md` | A meeting-ready, high-readability question document organized by business domain, with multiple-choice format |
+| PM Answer Template | `pm-answer-template.md` | A standard template pre-filled with question IDs for collecting PM answers; AI can auto-fill this from raw meeting notes |
 
-The question list is an internal backlog for the interview, not a prompt to
-dump every question to the PM at once. During a live interview, maintain an
-interview record and ask one question per turn.
+## Question Sources
 
-## Question Categories
+Questions are generated from multiple sources:
 
-Questions are organized into these categories. Every category must be
-covered when parser evidence or auxiliary materials suggest a gap:
+### From Field Analysis (`field-analysis.md`)
 
-### Permissions
-- Who can view, create, edit, delete, approve, and revoke each entity?
-- Are there role-based, data-scope, or conditional permission rules?
-- Are there tenant/organization-level boundaries?
+- Fields with 置信度 = `low` or `medium`
+- Fields where 信息来源 is "field name inference" or "default rules"
+- Conflicting field properties across different pages or areas
+- Fields with unclear 填写形式, 格式要求, or 枚举值
+- Missing 依赖关系 or 权限规则
 
-### Modification / Edit Boundaries
-- Which fields are editable at which lifecycle stage?
-- Are there immutable fields after creation or after a specific state?
-- Can users edit historical/archived records?
+### From Prototype Analysis
 
-### Business Logic
-- What are the primary business flows and their steps?
-- What calculations, validations, or transformations apply?
-- Are there cross-entity consistency rules?
+- Interactions marked as `inferred` or `unknown` confidence
+- Unresolved navigation targets
+- Pages with very few extracted components (possible parser gap)
+- Business rules from annotations that are ambiguous
 
-### State Transitions
-- What are the valid states for each entity?
-- Which transitions are allowed? Which are irreversible?
-- What triggers state changes (user action, system event, schedule)?
+### From Domain Logic
 
-### Exception Flows
-- What happens on duplicate submission, timeout, or concurrent edit?
-- What are the withdrawal, revoke, and rollback behaviors?
-- How are partial failures handled?
+- Permissions: who can view, create, edit, delete, approve each entity?
+- Modification boundaries: which fields are editable at which stage?
+- Business logic: calculations, validations, cross-entity rules
+- State transitions: valid states, allowed transitions, triggers
+- Exception flows: duplicate submission, timeout, concurrent edit
+- Data ownership: who owns each entity, delegation rules
+- Approval/revoke behavior: approval chains, delegation, recall
 
-### Data Ownership
-- Who owns each data entity? Can ownership transfer?
-- Are there delegation or proxy rules?
-- What data is shared or visible across organizational boundaries?
+### Filtering Rule
 
-### Approval / Revoke Behavior
-- Which operations require approval? What is the approval chain?
-- Can approvals be delegated, escalated, or recalled?
-- What happens when an approved item is revoked?
+> **Do not ask about every field.** Only generate questions for items that
+> meet at least one criterion:
+> - Low confidence in the field analysis
+> - High risk (affects data model, main flow, or API contract)
+> - Conflicting evidence (prototype vs. requirement doc vs. annotations)
+> - Missing critical information (e.g., no visible validation rules for
+>   a required field)
 
-### Missing Background Materials
-- Are there referenced documents, templates, or external specs not yet
-  provided?
-- Are there upstream or downstream systems whose contracts are undefined?
-- Are there regulatory, compliance, or legal constraints not documented?
+## Question Design Principles
 
-## Priority Levels
+### 1. Multiple-Choice First
 
-Every question is assigned a priority:
+Design questions as multiple-choice (A/B/C/D) wherever possible. This:
+- Reduces PM cognitive load
+- Speeds up meeting discussions
+- Produces unambiguous, structured answers
+- Makes it easy to circle/check answers on paper
 
-| Level | Meaning | Engineering Impact |
-|-------|---------|-------------------|
-| P0 | Blocks data model, API contract, or main flow design | Must confirm before development |
-| P1 | Affects boundary rules, error handling, or UX detail | Should confirm before or early in development |
-| P2 | Affects copy, defaults, configuration, or polish | Can defer to later iterations |
+Reserve open-ended questions only when the answer space is too broad for
+predefined options (e.g., "请描述审批流程的完整链路").
 
-## Answer / Source Labels
+### 2. Grouped by Business Domain
 
-Every recorded answer must carry one of these labels:
+Organize questions by business domain or functional module, **not** by
+technical dimension. Example groupings:
 
-| Label | Meaning |
-|-------|---------|
-| PM confirmed | Explicitly confirmed by the product manager |
-| Source-derived | Inferred directly from parser evidence, manual PRDs, or existing system docs |
-| Rejected | Explicitly rejected by the PM; the assumption is wrong |
-| Unanswered | Question was asked but not yet answered |
-| Missing context | Cannot be answered without additional materials or stakeholders |
+- ✅ 合同管理、供应商管理、审批流程
+- ❌ 权限问题、字段问题、状态问题
 
-## Interview Workflow
+This makes it natural for PMs to discuss related topics together.
+
+### 3. Evidence Context
+
+Every question must include a brief evidence context explaining **why**
+this question is being asked:
+
+```
+来源：原型「合同详情页」显示「合同金额」为只读，但「编辑合同」弹窗中
+该字段出现为可编辑输入框。两处矛盾，需确认。
+```
+
+### 4. Priority Labels
+
+Every question carries a priority label:
+
+| Level | Label | Meaning | Meeting Guidance |
+|-------|-------|---------|-----------------|
+| P0 | 🔴 必须确认 | Blocks data model, API contract, or main flow | Must resolve in this meeting |
+| P1 | 🟡 建议确认 | Affects boundary rules, error handling, or UX detail | Try to resolve; can follow up |
+| P2 | 🔵 可后续确认 | Affects copy, defaults, configuration, or polish | Discuss if time permits |
+
+### 5. Impact Statement
+
+Each question states the engineering impact of not answering:
+
+```
+影响：如不确认，开发无法确定合同编号是用户输入还是系统生成，
+将影响表单设计和后端编号生成逻辑。
+```
+
+## Checklist Document Structure
+
+The `pm-question-checklist.md` follows this structure:
+
+### Document Header
+
+```markdown
+# PM 需求确认提问清单
+
+| 项目 | 值 |
+|------|-----|
+| 项目名称 | <from prototype> |
+| 生成日期 | <date> |
+| 基于原型版本 | <prototype identifier> |
+| 问题总数 | <count> |
+| 🔴 P0 | <count> |
+| 🟡 P1 | <count> |
+| 🔵 P2 | <count> |
+
+## 使用说明
+
+1. 本清单按业务模块分组，建议按顺序讨论
+2. 选择题直接勾选或圈出选项即可
+3. 如有补充说明请写在「备注」栏
+4. 会后请将本清单或会议记录发给 AI，自动生成解答文档
+```
+
+### Question Sections (per business domain)
+
+```markdown
+## [模块名称]
+
+### Q01 🔴 [问题标题]
+
+**问题**：[具体问题描述]
+
+| 选项 | 说明 |
+|------|------|
+| A | [选项A描述] |
+| B | [选项B描述] |
+| C | [选项C描述] |
+| D | 其他：_______ |
+
+**来源**：[为什么问这个问题——引用原型/字段分析中的证据]
+**影响**：[不确认会导致什么工程问题]
+
+> PM 选择：____  备注：_________________________
+```
+
+### Summary Section
+
+```markdown
+## 汇总
+
+### 本次需确认的核心决策
+
+| # | 优先级 | 模块 | 问题摘要 | PM 决策 |
+|---|--------|------|----------|---------|
+| Q01 | 🔴 | 合同管理 | 合同编号生成规则 | |
+| Q02 | 🔴 | 合同管理 | 合同状态流转 | |
+| ... | | | | |
+```
+
+## Answer Template Structure
+
+The `pm-answer-template.md` is designed for two usage modes:
+
+### Mode 1: Manual Fill
+
+User prints or opens the template and fills in answers during/after the
+meeting:
+
+```markdown
+# PM 解答文档
+
+| 项目名称 | <from prototype> |
+| 会议日期 | _______ |
+| 参会人员 | _______ |
+
+## 解答记录
+
+### Q01: [问题标题]
+- PM 选择：[ ] A  [ ] B  [ ] C  [ ] D
+- 补充说明：
+- 确认状态：[ ] 已确认  [ ] 需后续确认  [ ] 不适用
+
+### Q02: [问题标题]
+...
+```
+
+### Mode 2: AI Auto-Fill from Meeting Notes
+
+User provides raw meeting notes (text, audio transcription, or chat log),
+and AI automatically:
+
+1. Matches meeting note content to question IDs
+2. Identifies which questions were answered
+3. Fills in the answer template with PM responses
+4. Labels each answer with a source tag:
+   - `PM 明确回答` — PM directly addressed the question
+   - `会议内容推断` — answer inferred from meeting discussion context
+   - `未提及` — question was not discussed in the meeting
+5. Highlights any new questions or requirements that emerged from the
+   meeting but were not in the original checklist
+
+The auto-fill prompt for the AI:
+
+```
+请根据以下会议记录，自动填写 PM 解答模板。
+
+规则：
+1. 将会议记录中的内容匹配到对应问题编号
+2. 如果 PM 明确回答了某个问题，标注「PM 明确回答」并记录原文
+3. 如果可以从会议讨论推断答案，标注「会议内容推断」并说明推断依据
+4. 如果会议未涉及某个问题，标注「未提及」
+5. 如果会议中出现了清单外的新需求或新问题，在末尾「新增问题」区记录
+```
+
+## Workflow
 
 ### 1. Gather Inputs
 
-Collect parser artifacts and any auxiliary materials. Identify the
-completeness gaps from `completeness-report.json`.
+Collect parser artifacts, field analysis, and any auxiliary materials.
+Review field analysis for:
+- Low confidence fields (置信度 = `low`)
+- Questions already generated in `field-analysis.md` section 5.6
+- Unresolved interactions from prototype analysis
+- Completeness gaps from `completeness-report.json`
 
 ### 2. Generate Question List
 
-For each question category, inspect parser evidence and auxiliary
-materials. Generate questions where:
+For each question source, inspect evidence and generate questions where
+information is insufficient for confident engineering:
 
-- The prototype shows a feature but not its rules or constraints.
-- Interactions exist but target pages have no business logic description.
-- Permissions, validations, or state transitions are referenced but not
-  defined.
-- Data is displayed but ownership, source, or mutability is unclear.
-- Annotations hint at business rules without full specification.
+- Merge questions from `field-analysis.md` section 5.6 (already formatted
+  as multiple-choice) with domain logic questions
+- Deduplicate questions that address the same decision point
+- Assign priorities (P0/P1/P2) based on engineering impact
+- Group by business domain / functional module
+- Number sequentially (Q01, Q02, ...)
 
-Prioritize questions with P0/P1/P2 based on the definitions above.
+### 3. Format the Checklist
 
-Create an interview record before asking the first question. The record must
-include the question backlog and enough state for a new agent to continue the
-interview without memory of prior turns:
+Write `pm-question-checklist.md` following the document structure above.
+Ensure:
 
-| ID | Priority | Category | Evidence | Question | Decision Needed | Impact | Status | PM Answer | Result |
-|----|----------|----------|----------|----------|-----------------|--------|--------|-----------|--------|
+- Every question has evidence context and impact statement
+- Multiple-choice options cover the most likely answers plus "其他"
+- The document reads well when printed on A4 paper or displayed on screen
+- Summary table at the end lists all questions for quick overview
 
-Allowed statuses:
+### 4. Generate the Answer Template
 
-- Not asked
-- Confirmed
-- Partially confirmed
-- Still open
-- Needs repository check
-- Needs external material
-- Not applicable
+Write `pm-answer-template.md` with:
 
-### 3. Conduct the Interview
+- Pre-filled question IDs and titles from the checklist
+- Checkbox-style answer slots for each option
+- Space for supplementary notes
+- Confirmation status checkboxes
+- A "新增问题" section at the end for capturing new items from the meeting
 
-Conduct the interview incrementally. Do not present the full backlog as
-questions. For each turn:
+### 5. Hand Off
 
-- Pick the next question from the backlog by priority: P0 first, then P1,
-  then P2. Within the same priority, ask questions that affect data models,
-  API contracts, main flows, templates, external dependencies, and
-  permissions before lower-impact UX details.
-- Ask one question per turn. The question must be short, specific, and able
-  to close one decision point.
-- State only the minimum prototype evidence needed for context.
-- Record the answer verbatim with the appropriate source label.
-- After each PM answer, update the interview record before asking anything
-  else.
-- Mark the current item as confirmed, partially confirmed, still open,
-  needs repository check, needs external material, rejected, or not
-  applicable.
-- If the answer creates a new blocker, add a new backlog item and reprioritize
-  the backlog.
-- If the PM defers or doesn't know, label as `Unanswered` and assign a
-  follow-up owner.
-- Continue until all P0 questions are confirmed, rejected as not applicable,
-  or converted into explicit follow-up blockers with owners.
+After the PM meeting:
 
-Once all P0 questions are no longer open, the interview has reached the
-threshold for the next stage. Recommend handing the parser artifacts and
-interview report to `bdd-engineering-prd-writer`, but allow the PM to
-continue the interview to complete P1/P2 items and enrich the record.
-
-Each live-interview response must use this structure:
-
-1. **Interview record update**: summarize what changed in the record.
-2. **Threshold status**: state how many P0 items remain open and whether the
-   threshold for the next stage has been reached.
-3. **Next question**: ask one question only, or ask whether to continue the
-   interview after the P0 threshold is reached.
-
-### 4. Produce the Interview Report
-
-Write a structured PM interview report containing:
-
-- **Summary**: overall confirmation status, count of P0/P1/P2 items, and
-  remaining open items.
-- **Confirmed Decisions**: PM-confirmed answers that now become
-  requirements.
-- **Rejected Assumptions**: parser inferences or assumptions the PM
-  explicitly rejected.
-- **Unanswered Questions**: open items with P0/P1/P2 priority and
-  follow-up owners.
-- **Missing Context**: items blocked by unavailable materials or
-  stakeholders.
-
-### 5. Hand Off to BDD Writer
-
-Pass the PM interview report, parser artifacts, and all auxiliary materials
-to `bdd-engineering-prd-writer` for the final BDD engineering PRD.
+- User provides either the filled answer template or raw meeting notes
+- If raw meeting notes are provided, AI auto-fills the answer template
+- The completed answer document, together with parser artifacts and field
+  analysis, is passed to `bdd-engineering-prd-writer` for the final BDD
+  engineering PRD
 
 ## Rules
 
-- **Do not invent PM answers.** If a question is unanswered, record it as
-  `Unanswered` — never fill in a plausible answer.
-- **Do not skip categories.** If a category has no questions because the
-  material is silent, note that explicitly (e.g., "Permissions: no
-  permission-related content found in parser evidence or auxiliary
-  materials").
-- **Distinguish parser inference from PM confirmation.** A fact labeled
-  `inferred` by the parser becomes `PM confirmed` or `Rejected` only after
-  the PM explicitly addresses it.
-- **P0 items must be resolved before the BDD writer can produce a
-  development-ready PRD.** Flag unresolved P0 items prominently.
+- **Do not ask about every field.** Only generate questions for low
+  confidence, high risk, or conflicting items.
+- **Prefer multiple-choice.** Open-ended questions are a last resort.
+- **Group by business domain.** Do not organize by technical category.
+- **Include evidence.** Every question must state why it is being asked.
+- **State impact.** Every question must state what goes wrong without an
+  answer.
+- **Do not invent answers.** The checklist contains questions only — no
+  assumed or default answers should be presented as confirmed.
+- **Do not skip categories.** If a domain has no questions because the
+  material is complete, note that explicitly (e.g., "合同管理：字段分析
+  置信度均为 high，无需确认").
+- **Readable format.** The document must be usable in a meeting without
+  AI assistance — printable, scannable, with clear visual hierarchy.

@@ -1,45 +1,54 @@
 ---
 name: bdd-engineering-prd-writer
 description: >
-  Stage 3 of 3: Combine prototype parser evidence, PM interview report,
-  manual PRDs, and auxiliary materials into a traceable BDD engineering PRD
-  that coding agents can use for planning and implementation. Every
-  requirement is backed by evidence or explicit human confirmation.
+  Stage 4 of 4: Combine prototype parser evidence, field analysis report,
+  PM answer document (from meeting notes or filled template), manual PRDs,
+  and auxiliary materials into a traceable BDD engineering PRD that coding
+  agents can use for planning and implementation. Every requirement is
+  backed by evidence or explicit human confirmation.
 triggers:
   - "write BDD PRD"
   - "engineering PRD"
   - "BDD engineering PRD"
   - "write engineering requirements"
   - "generate development PRD"
+  - "生成工程PRD"
 ---
 
-# bdd-engineering-prd-writer (Stage 3 — BDD Engineering PRD Writer)
+# bdd-engineering-prd-writer (Stage 4 — BDD Engineering PRD Writer)
 
-Combine prototype parser evidence, PM-confirmed interview answers, manual
-PRDs, and auxiliary materials into a single traceable BDD engineering PRD.
-Every requirement is backed by either source evidence or explicit PM
+Combine prototype parser evidence, field analysis report, PM-confirmed
+answers (from meeting notes or answer template), manual PRDs, and
+auxiliary materials into a single traceable BDD engineering PRD. Every
+requirement is backed by either source evidence or explicit PM
 confirmation — never by invention.
 
-This is stage 3 of the three-stage workflow:
+This is stage 4 of the four-stage workflow:
 
-1. **Parser** (`proto-to-requirement`) — produces prototype evidence.
-2. **PM Interviewer** (`proto-pm-interviewer`) — produces PM interview
-   report with confirmed decisions.
-3. **BDD Writer** (this skill) — produces the final BDD engineering PRD.
+1. **Parser + Field Analysis** (`proto-to-requirement`) — produces
+   prototype evidence and 18-dimension field analysis.
+2. **PM Question Checklist** (`proto-pm-interviewer`) — generates a
+   meeting-ready question document.
+3. **PM Answer Collection** (user manual step) — user collects PM answers
+   during meeting and provides meeting notes or filled answer template.
+4. **BDD Writer** (this skill) — produces the final BDD engineering PRD.
 
 ## When to Use
 
-- After both parser artifacts and the PM interview report are available.
+- After parser artifacts, field analysis, and PM answer document are
+  available.
 - When you need a PRD that a coding agent (Codex, Claude Code, etc.) can
   use directly for engineering planning, task breakdown, and
   implementation.
 - When requirements traceability matters: every claim must be attributable
-  to parser evidence or PM confirmation.
+  to parser evidence, field analysis, or PM confirmation.
 
 ## When Not to Use
 
-- Before prototype parsing is complete: run `proto-to-requirement` first.
-- Before the PM interview is complete: run `proto-pm-interviewer` first.
+- Before prototype parsing and field analysis are complete: run
+  `proto-to-requirement` first.
+- Before PM answers are collected: run `proto-pm-interviewer` to generate
+  the question checklist, then hold the PM meeting.
 - When only a raw prototype data dump is needed: that's the parser stage
   output.
 - When no human confirmation is available for unresolved parser findings:
@@ -49,10 +58,14 @@ This is stage 3 of the three-stage workflow:
 
 1. **Parser evidence**: `prototype-analysis.md`, `structured-data.json`,
    `completeness-report.json` from the parser stage.
-2. **PM interview report**: confirmed decisions, rejected assumptions,
-   unanswered questions, and missing context from the interview stage.
-3. **Manual PRDs or requirement documents** (if available).
-4. **Auxiliary materials** (if available): screenshots, system docs,
+2. **Field analysis**: `field-analysis.md` from the parser stage —
+   including page structure, 18-dimension field descriptions, operation
+   logic, dependency map, and preliminary GWT scenarios.
+3. **PM answer document**: `pm-answer-template.md` (filled by user or
+   auto-filled by AI from meeting notes) — containing PM decisions for
+   each question from the checklist, with source labels.
+4. **Manual PRDs or requirement documents** (if available).
+5. **Auxiliary materials** (if available): screenshots, system docs,
    flowcharts, meeting notes, existing codebase references.
 
 ## Output
@@ -133,16 +146,20 @@ source:
 
 | Requirement | Source | Confidence |
 |-------------|--------|------------|
-| <claim> | Parser `structured-data.json` / PM interview / Manual PRD / Auxiliary | fact / PM confirmed / inferred |
+| <claim> | Parser `structured-data.json` / Field Analysis / PM Answer / Manual PRD / Auxiliary | fact / PM confirmed / inferred / field analysis high/medium/low |
+
+When the field analysis provides a confidence level for a field, use it
+as the starting confidence. PM answers can upgrade confidence (e.g.,
+`low` → `PM confirmed`) or override the field analysis finding.
 
 ### Human Confirmation Mapping
 
 Document every PM-confirmed decision that overrides or supplements parser
-evidence:
+or field analysis evidence:
 
-| Parser Finding | PM Decision | Impact |
-|----------------|-------------|--------|
-| <original parser fact or inference> | Confirmed / Rejected / Modified with details | <what changes in the PRD> |
+| Original Finding | Source | PM Decision | Impact |
+|-----------------|--------|-------------|--------|
+| <parser fact or field analysis inference> | Parser / Field Analysis | Confirmed / Rejected / Modified with details | <what changes in the PRD> |
 
 ### Coding Agent Guardrails
 
@@ -173,12 +190,22 @@ The coding agent that consumes this PRD must follow these rules:
 
 ### 领域模型与数据结构 (Domain Model & Data)
 
-Describe data entities, their relationships, and constraints. Use
-"说明" (description) column headers, not "字段" (field) — to avoid
-inducing the coding agent to create fields from description labels.
+Use `field-analysis.md` as the foundation for this section. The field
+description table provides 18-dimension analysis of every prototype field.
+
+**Important**: The field analysis describes prototype UI fields only —
+it does NOT map to database columns. Use "说明" (description) column
+headers, not "字段" (field) — to avoid inducing the coding agent to
+create fields from description labels.
 
 Every data description must state whether the repository already has an
 equivalent, or whether this is a new candidate.
+
+Leverage field analysis dimensions:
+- Use 所属页面/所属区域 for organizing descriptions by domain
+- Use 依赖关系 for entity relationship descriptions
+- Use 置信度 to flag items needing extra repository verification
+- Use PM answers to override or confirm field analysis findings
 
 ### 接口与后端能力 (API & Backend Capabilities)
 
